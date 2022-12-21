@@ -14,7 +14,7 @@
 	<name>JavaQuestionBot</name>
 	<description>Telegram Bot project</description>
 	<properties>
-		<java.version>19</java.version>
+		<java.version>12</java.version>
 		<telegram.version>6.1.0</telegram.version>
 	</properties>
 	<dependencies>
@@ -46,6 +46,9 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<executable>true</executable>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
