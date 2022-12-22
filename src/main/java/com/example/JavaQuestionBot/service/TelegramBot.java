@@ -1,7 +1,10 @@
 package com.example.JavaQuestionBot.service;
 
 import com.example.JavaQuestionBot.config.BotConfig;
+import com.example.JavaQuestionBot.model.QuestionRepository;
+import com.example.JavaQuestionBot.model.Questions;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
@@ -15,11 +18,14 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 @Slf4j
 @Component
 public class TelegramBot extends TelegramLongPollingBot {
 
+    @Autowired
+    private QuestionRepository questionRepository;
     private final BotConfig config;
     private final static String UNKNOWN_COMMAND = "Извините, я не знаю такой команды.";
     private final static String HELP_TEXT = "Данный бот написан для помощи в изучении Java.\n\n" +
@@ -65,6 +71,9 @@ public class TelegramBot extends TelegramLongPollingBot {
                 case "/help":
                     helpCommandReceived(chatId, userName);
                     break;
+                case "/question":
+                    sendMessage(chatId, getQuestion().getQuestion());
+                    break;
                 default: sendMessage(chatId, UNKNOWN_COMMAND);
             }
         }
@@ -90,5 +99,13 @@ public class TelegramBot extends TelegramLongPollingBot {
         } catch (TelegramApiException e) {
             log.error("Error occurred: " + e.getMessage());
         }
+    }
+    private Questions getQuestion(){
+        Optional<Questions> optionalQuestion = questionRepository.findById(1l);
+        Questions  question = null;
+        if(optionalQuestion.isPresent()){
+            question = optionalQuestion.get();
+        }
+        return question;
     }
 }
