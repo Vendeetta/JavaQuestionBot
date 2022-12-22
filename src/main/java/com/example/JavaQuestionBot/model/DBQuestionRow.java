@@ -5,7 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
 @Entity(name = "QuestionsDataTable")
-public class Questions {
+public class DBQuestionRow {
 
     @Id
     private Long numberOfQuestion;
