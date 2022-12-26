@@ -2,6 +2,7 @@ package com.example.JavaQuestionBot.service;
 
 import com.example.JavaQuestionBot.config.BotConfig;
 import com.example.JavaQuestionBot.exceptions.UnknownQuestionException;
+import com.example.JavaQuestionBot.model.Category;
 import com.example.JavaQuestionBot.model.QuestionRepository;
 import com.example.JavaQuestionBot.model.DBQuestionRow;
 import lombok.SneakyThrows;
@@ -30,6 +31,8 @@ public class TelegramBot extends TelegramLongPollingBot {
     private QuestionRepository questionRepository;
     private final BotConfig config;
     private DBQuestionRow currentQuestion;
+
+    private Category category;
     private final static String UNKNOWN_COMMAND = "Извините, я не знаю такой команды.";
     private final static String HELP_TEXT = "Данный бот написан для помощи в изучении Java.\n\n" +
                                             "По команде /question бот выдает произвольный вопрос по Java.\n\n" +
@@ -77,6 +80,10 @@ public class TelegramBot extends TelegramLongPollingBot {
                     helpCommandReceived(chatId, userName);
                     break;
                 case "/question":
+                    if(category == null){
+                        sendMessage(chatId, "Выберите тему вопросов");
+
+                    }
                     DBQuestionRow question = getQuestion();
                     if(question == null) throw new UnknownQuestionException();
                     currentQuestion = question;
@@ -153,12 +160,16 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
     private DBQuestionRow getQuestion(){
-        long random = (long)new Random().nextInt(20);
+        long random = (long)new Random().nextInt(1);
         Optional<DBQuestionRow> optionalQuestion = questionRepository.findById(random);
         DBQuestionRow question = null;
         if(optionalQuestion.isPresent()){
             question = optionalQuestion.get();
         }
+        for(DBQuestionRow q : questionRepository.findByCategory("java")){
+            System.out.println(q.getQuestion());
+        }
+
         return question;
     }
 

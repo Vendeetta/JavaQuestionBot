@@ -4,15 +4,16 @@ package com.example.JavaQuestionBot.model;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
-@Entity(name = "QuestionsDataTable")
+@Entity(name = "SqlQuestion")
 public class DBQuestionRow {
-
     @Id
     private Long numberOfQuestion;
 
     private String question;
 
     private String answer;
+
+    private String category;
 
     public Long getNumberOfQuestion() {
         return numberOfQuestion;
