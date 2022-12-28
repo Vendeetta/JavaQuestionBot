@@ -75,14 +75,11 @@ public class TelegramBot extends TelegramLongPollingBot {
     @SneakyThrows
     @Override
     public void onUpdateReceived(Update update) {
-        UserChatData pers1 = null;
-        UserChatData pers2 = null;
         Message message = update.getMessage();
         if(update.hasMessage() && !personalDataFoUsers.containsKey(message.getChatId())) {
             personalDataFoUsers.put(message.getChatId(), new UserChatData(message.getChatId()));
         }
         if (update.hasMessage() && message.hasText()) {
-            System.out.println("здесь2");
             String messageText = message.getText();
             String userName = message.getChat().getFirstName();
             long chatId = message.getChatId();
@@ -102,9 +99,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                         askCurrentCategory(chatId);
                         break;
                     }
-                    DBQuestionRow question = getQuestion(personalDataFoUsers.get(chatId));
-                    if(question == null) throw new UnknownQuestionException();
-                    personalDataFoUsers.get(chatId).setCurrentDBRow(question);
+                    personalDataFoUsers.get(chatId).setCurrentDBRow();
                     Thread.sleep(500);
                     askQuestion(chatId, personalDataFoUsers.get(chatId));
 
@@ -123,16 +118,12 @@ public class TelegramBot extends TelegramLongPollingBot {
             }
 
         } else if (update.hasCallbackQuery()) {
-            System.out.println("здесь1");
             int messageId = update.getCallbackQuery().getMessage().getMessageId();
-               long chatId = update.getCallbackQuery().getMessage().getChatId();
-//            UserChatData personalData = personalDataFoUsers.get(message.getChatId());
-            pers2 = personalDataFoUsers.get(chatId);
+            long chatId = update.getCallbackQuery().getMessage().getChatId();
             String callBackData = update.getCallbackQuery().getData();
 
             if(callBackData.equals(SHOW_ANSWER_BUTTON)){
                 EditMessageText editMessageText = new EditMessageText();
-//                long chatId = update.getCallbackQuery().getMessage().getChatId();
                 editMessageText.setChatId(chatId);
                 editMessageText.setMessageId(messageId);
                 editMessageText.setText(personalDataFoUsers.get(chatId).getCurrentDBRow().getAnswer());
@@ -143,15 +134,11 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
             }
             if(callBackData.equals(JAVA_CORE_BUTTON)){
-//                long chatId = update.getCallbackQuery().getMessage().getChatId();
                 personalDataFoUsers.get(chatId).setQuestions(questionRepository.findByCategory("java"));
-                System.out.println(personalDataFoUsers.get(chatId).getQuestions());
                 sendMessage(chatId, "Тема установлена: Java Core.");
                 personalDataFoUsers.get(chatId).setCurrentCategory(Category.Java_Core);
             }
             if(callBackData.equals(SQL_BUTTON)){
-                System.out.println("здесь");
-//                long chatId = update.getCallbackQuery().getMessage().getChatId();
                 personalDataFoUsers.get(chatId).setQuestions(questionRepository.findByCategory("sql"));
                 sendMessage(chatId, "Тема установлена: SQL.");
                 personalDataFoUsers.get(chatId).setCurrentCategory(Category.SQL);
@@ -237,18 +224,6 @@ public class TelegramBot extends TelegramLongPollingBot {
             log.error("Error occurred: " + e.getMessage());
         }
     }
-    private DBQuestionRow getQuestion(UserChatData personalData){
-        int random = new Random().nextInt(personalData.getQuestions().size());
-//        Optional<DBQuestionRow> optionalQuestion = questionRepository.findById(random);
-        DBQuestionRow question = personalData.getQuestions().get(random);
-//        if(optionalQuestion.isPresent()){
-//            question = optionalQuestion.get();
-//        }
-//        for(DBQuestionRow q : questionRepository.findByCategory("java")){
-//            System.out.println(q.getQuestion());
-//        }
 
-        return question;
-    }
 
 }

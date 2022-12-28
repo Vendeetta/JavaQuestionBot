@@ -4,7 +4,7 @@ package com.example.JavaQuestionBot.model;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
-@Entity(name = "SqlQuestion")
+@Entity(name = "questionsDataTable")
 public class DBQuestionRow {
     @Id
     private Long numberOfQuestion;

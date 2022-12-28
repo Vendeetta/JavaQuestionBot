@@ -1,6 +1,7 @@
 package com.example.JavaQuestionBot.model;
 
 import java.util.List;
+import java.util.Random;
 
 public class UserChatData {
 
@@ -46,8 +47,9 @@ public class UserChatData {
         return currentDBRow;
     }
 
-    public void setCurrentDBRow(DBQuestionRow currentDBRow) {
-        this.currentDBRow = currentDBRow;
+    public void setCurrentDBRow() {
+        int random = new Random().nextInt(questions.size());
+        currentDBRow = questions.get(random);
     }
 }
 
