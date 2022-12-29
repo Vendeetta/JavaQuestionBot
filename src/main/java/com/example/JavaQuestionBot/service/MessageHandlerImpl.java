@@ -1,6 +1,6 @@
 package com.example.JavaQuestionBot.service;
 
-public class MessageHandlerImpl implements MessageHandler{
+public class MessageHandlerImpl implements MessageHandler {
     private TelegramBot bot;
     private Command command;
 
@@ -22,7 +22,7 @@ public class MessageHandlerImpl implements MessageHandler{
                 command.helpCommandReceived(chatId, userName);
                 break;
             case "/question":
-                if(bot.getPersonalDataFoUsers().get(chatId).getCurrentCategory() == null){
+                if (bot.getPersonalDataFoUsers().get(chatId).getCurrentCategory() == null) {
                     command.askCurrentCategory(chatId);
                     break;
                 }
@@ -35,16 +35,22 @@ public class MessageHandlerImpl implements MessageHandler{
                 command.askQuestion(chatId, bot.getPersonalDataFoUsers().get(chatId));
                 break;
             case "/category":
-                if(bot.getPersonalDataFoUsers().get(chatId).getQuestions() != null) {
+                if (bot.getPersonalDataFoUsers().get(chatId).getQuestions() != null) {
                     bot.sendMessage(chatId, "В данным момент установлена тема: " + bot.getPersonalDataFoUsers().get(chatId).getCurrentCategory().getName() +
                             "\nХотите поменять тему?");
                 }
                 command.askCurrentCategory(chatId);
                 break;
             case "/currenttheme":
-                bot.sendMessage(chatId, "Текущая тема вопросов: \n" + bot.getPersonalDataFoUsers().get(chatId).getCurrentCategory().getName());
+                if (bot.getPersonalDataFoUsers().get(chatId).getCurrentCategory() == null) {
+                    bot.sendMessage(chatId, "Тема не установлена.");
+                    break;
+                }
+                String currentTheme = bot.getPersonalDataFoUsers().get(chatId).getCurrentCategory().getName();
+                bot.sendMessage(chatId, "Текущая тема вопросов: \n" + currentTheme);
                 break;
-            default: bot.sendMessage(chatId, UNKNOWN_COMMAND);
+            default:
+                bot.sendMessage(chatId, UNKNOWN_COMMAND);
         }
     }
 }
