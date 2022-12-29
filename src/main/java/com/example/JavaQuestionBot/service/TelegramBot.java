@@ -1,10 +1,7 @@
 package com.example.JavaQuestionBot.service;
 
 import com.example.JavaQuestionBot.config.BotConfig;
-import com.example.JavaQuestionBot.exceptions.UnknownQuestionException;
-import com.example.JavaQuestionBot.model.Category;
 import com.example.JavaQuestionBot.model.QuestionRepository;
-import com.example.JavaQuestionBot.model.DBQuestionRow;
 import com.example.JavaQuestionBot.model.UserChatData;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +15,6 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.*;
@@ -31,20 +26,12 @@ public class TelegramBot extends TelegramLongPollingBot {
     @Autowired
     private QuestionRepository questionRepository;
     private final BotConfig config;
-//    private DBQuestionRow currentQuestion;
 
-//    private Category category;
+    public Map<Long, UserChatData> getPersonalDataFoUsers() {
+        return personalDataFoUsers;
+    }
 
-//    private List<DBQuestionRow> currentCategoryQuestions;
     private Map<Long, UserChatData> personalDataFoUsers;
-    private final static String UNKNOWN_COMMAND = "Извините, я не знаю такой команды.";
-    private final static String HELP_TEXT = "Данный бот написан для помощи в изучении Java.\n\n" +
-                                            "По команде /question бот выдает произвольный вопрос по Java.\n\n" +
-                                            "После ответа на вопрос, Вы можете посмотреть ответ, предлагаемый ботом.\n\n"+
-                                            "Продуктивного Вам обученияй! ;)";
-    private final static String SHOW_ANSWER_BUTTON = "YES_BUTTON";
-    private final static String JAVA_CORE_BUTTON = "JAVA_CORE_BUTTON";
-    private final static String SQL_BUTTON = "SQL_BUTTON";
 
     public TelegramBot(BotConfig config) {
         this.config = config;
@@ -60,6 +47,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         } catch (TelegramApiException e) {
             log.error("Ошибка при установке меню бота :" + e.getMessage());
         }
+    }
+
+    public QuestionRepository getQuestionRepository() {
+        return questionRepository;
     }
 
     @Override
@@ -83,141 +74,25 @@ public class TelegramBot extends TelegramLongPollingBot {
             String messageText = message.getText();
             String userName = message.getChat().getFirstName();
             long chatId = message.getChatId();
-
-
-            System.out.println(personalDataFoUsers.get(chatId));
-            switch (messageText) {
-                case "/start":
-                case "/старт":
-                    startCommandReceived(chatId, userName);
-                    break;
-                case "/help":
-                    helpCommandReceived(chatId, userName);
-                    break;
-                case "/question":
-                    if(personalDataFoUsers.get(chatId).getCurrentCategory() == null){
-                        askCurrentCategory(chatId);
-                        break;
-                    }
-                    personalDataFoUsers.get(chatId).setCurrentDBRow();
-                    Thread.sleep(500);
-                    askQuestion(chatId, personalDataFoUsers.get(chatId));
-
-                    break;
-                case "/category":
-                    if(personalDataFoUsers.get(chatId).getQuestions() != null) {
-                        sendMessage(chatId, "В данным момент тема уже установлена: \n" + personalDataFoUsers.get(chatId).getCurrentCategory().getName());
-                        break;
-                    }
-                    askCurrentCategory(chatId);
-                    break;
-                case "/currenttheme":
-                    sendMessage(chatId, "Текущая тема вопросов: \n" + personalDataFoUsers.get(chatId).getCurrentCategory().getName());
-                    break;
-                default: sendMessage(chatId, UNKNOWN_COMMAND);
-            }
+            MessageHandler messageHandler = new MessageHandlerImpl(this);
+            messageHandler.messageProcessing(messageText, userName, chatId);
 
         } else if (update.hasCallbackQuery()) {
             int messageId = update.getCallbackQuery().getMessage().getMessageId();
             long chatId = update.getCallbackQuery().getMessage().getChatId();
             String callBackData = update.getCallbackQuery().getData();
-
-            if(callBackData.equals(SHOW_ANSWER_BUTTON)){
-                EditMessageText editMessageText = new EditMessageText();
-                editMessageText.setChatId(chatId);
-                editMessageText.setMessageId(messageId);
-                editMessageText.setText(personalDataFoUsers.get(chatId).getCurrentDBRow().getAnswer());
-                try {
-                    execute(editMessageText);
-                } catch (TelegramApiException e) {
-                    log.error("Error occurred: " + e.getMessage());
-                }
-            }
-            if(callBackData.equals(JAVA_CORE_BUTTON)){
-                personalDataFoUsers.get(chatId).setQuestions(questionRepository.findByCategory("java"));
-                sendMessage(chatId, "Тема установлена: Java Core.");
-                personalDataFoUsers.get(chatId).setCurrentCategory(Category.Java_Core);
-            }
-            if(callBackData.equals(SQL_BUTTON)){
-                personalDataFoUsers.get(chatId).setQuestions(questionRepository.findByCategory("sql"));
-                sendMessage(chatId, "Тема установлена: SQL.");
-                personalDataFoUsers.get(chatId).setCurrentCategory(Category.SQL);
-            }
+            CallBackQueryHandler callBackQueryHandler = new CallBackQueryHandlerImpl(this);
+            callBackQueryHandler.callBackDataProcessing(callBackData, messageId, chatId);
         }
     }
 
-    private void askCurrentCategory(long chatId) {
-        SendMessage message = new SendMessage();
-        message.setChatId(String.valueOf(chatId));
-        message.setText("Выберите тему:");
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
-        List<InlineKeyboardButton> rowInline = new ArrayList<>();
-
-        var javaCoreButton = new InlineKeyboardButton();
-        javaCoreButton.setText(Category.Java_Core.getName());
-        javaCoreButton.setCallbackData(JAVA_CORE_BUTTON);
-
-        var sqlButton = new InlineKeyboardButton();
-        sqlButton.setText(Category.SQL.getName());
-        sqlButton.setCallbackData(SQL_BUTTON);
-
-        rowInline.add(javaCoreButton);
-        rowInline.add(sqlButton);
-        rowsInline.add(rowInline);
-
-        markup.setKeyboard(rowsInline);
-        message.setReplyMarkup(markup);
-
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-            log.error("Error occurred: " + e.getMessage());
-        }
-    }
-
-    private void askQuestion(Long chatId, UserChatData personalData) {
-        SendMessage message = new SendMessage();
-        message.setChatId(String.valueOf(chatId));
-        message.setText(personalData.getCurrentDBRow().getQuestion());
-
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
-        List<InlineKeyboardButton> rowInline = new ArrayList<>();
-
-        var showAnswerButton = new InlineKeyboardButton();
-        showAnswerButton.setText("Показать ответ");
-        showAnswerButton.setCallbackData(SHOW_ANSWER_BUTTON);
-
-        rowInline.add(showAnswerButton);
-        rowsInline.add(rowInline);
-
-        markup.setKeyboard(rowsInline);
-        message.setReplyMarkup(markup);
-
-        try {
-            execute(message);
-        } catch (TelegramApiException e) {
-            log.error("Error occurred: " + e.getMessage());
-        }
-
-    }
-
-    private void startCommandReceived(Long chatId, String userName) {
-        String answer = "Привет, " + userName + "!";
-        log.info("Replied to " + userName);
-        sendMessage(chatId, answer);
-    }
-
-    private void helpCommandReceived(Long chatId, String userName) {
-        log.info("HELP COMMAND: Replied to " + userName);
-        sendMessage(chatId, HELP_TEXT);
-    }
-
-    private void sendMessage (long chatId, String textToSend){
+    void sendMessage (long chatId, String textToSend){
         SendMessage messenger = new SendMessage();
         messenger.setChatId(String.valueOf(chatId));
         messenger.setText(textToSend);
+        executeCatcher(messenger);
+    }
+    void executeCatcher(SendMessage messenger){
         try {
             execute(messenger);
         } catch (TelegramApiException e) {
@@ -225,5 +100,12 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
+    void executeCatcher(EditMessageText messenger){
+        try {
+            execute(messenger);
+        } catch (TelegramApiException e) {
+            log.error("Error occurred: " + e.getMessage());
+        }
+    }
 
 }
